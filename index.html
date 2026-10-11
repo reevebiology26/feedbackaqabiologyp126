@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ace Your Mock Weaknesses</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons (Lucide alternative for easy CDN usage) -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+        }
+        @keyframes pulse-red {
+            0%, 100% { background-color: #ef4444; color: white; }
+            50% { background-color: #fca5a5; color: #7f1d1d; }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+        .animate-dictate {
+            animation: pulse-red 1.5s infinite;
+        }
+        .hidden { display: none !important; }
+        
+        /* Dashboard Circle SVG Transition */
+        .circle-chart-path {
+            transition: stroke-dasharray 1s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 flex flex-col min-h-screen">
+
+    <header class="bg-blue-900 text-white shadow-md z-10 sticky top-0">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight">Ace Your Mock Weaknesses</h1>
+                <p class="text-blue-200 text-sm font-medium">Created by Mr Reeve | AQA Biology Revision</p>
+            </div>
+            <button onclick="handleScreenshotClick()" class="mt-4 sm:mt-0 flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-5 py-2 rounded-full font-bold shadow-lg transition-transform transform hover:scale-105">
+                <i class="ph ph-camera text-xl"></i>
+                Screenshot Your Score
+            </button>
+        </div>
+        
+        <div class="flex overflow-x-auto bg-blue-950">
+            <div class="max-w-6xl mx-auto w-full flex" id="nav-tabs">
+                <button onclick="switchTab('matchup')" class="nav-btn active flex items-center gap-2 px-6 py-3 font-semibold text-sm sm:text-base whitespace-nowrap transition-colors border-b-4 bg-blue-800 text-white border-blue-400" data-tab="matchup"><i class="ph ph-arrows-left-right"></i> 1. Match Up</button>
+                <button onclick="switchTab('mcq')" class="nav-btn flex items-center gap-2 px-6 py-3 font-semibold text-sm sm:text-base whitespace-nowrap transition-colors border-b-4 text-blue-300 border-transparent hover:bg-blue-900 hover:text-white" data-tab="mcq"><i class="ph ph-check-circle"></i> 2. Quiz</button>
+                <button onclick="switchTab('calc')" class="nav-btn flex items-center gap-2 px-6 py-3 font-semibold text-sm sm:text-base whitespace-nowrap transition-colors border-b-4 text-blue-300 border-transparent hover:bg-blue-900 hover:text-white" data-tab="calc"><i class="ph ph-calculator"></i> 3. Maths</button>
+                <button onclick="switchTab('long')" class="nav-btn flex items-center gap-2 px-6 py-3 font-semibold text-sm sm:text-base whitespace-nowrap transition-colors border-b-4 text-blue-300 border-transparent hover:bg-blue-900 hover:text-white" data-tab="long"><i class="ph ph-pen-nib"></i> 4. Longer Answers</button>
+                <button onclick="switchTab('dash')" class="nav-btn flex items-center gap-2 px-6 py-3 font-semibold text-sm sm:text-base whitespace-nowrap transition-colors border-b-4 text-blue-300 border-transparent hover:bg-blue-900 hover:text-white" data-tab="dash"><i class="ph ph-chart-bar"></i> 5. Dashboard</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-6xl mx-auto w-full p-4 sm:p-6 pb-20 relative">
+        
+        <!-- Tab 1: Match Up -->
+        <div id="tab-matchup" class="tab-content animate-fade-in">
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold flex items-center gap-2"><i class="ph ph-arrows-left-right text-blue-600"></i> Tab 1: Match Up</h2>
+                <p class="text-slate-600">Tap a question box, then tap the correct answer box to link them. Clear the board! (Batch <span id="match-batch-label">1</span> of 2)</p>
+            </div>
+            <div id="matchup-complete" class="hidden bg-emerald-100 border border-emerald-300 text-emerald-800 p-8 rounded-2xl text-center font-bold text-xl shadow-sm">
+                🎉 Fantastic! You've matched all the concepts. Score: 8/8
+            </div>
+            <div id="matchup-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-3">
+                    <h3 class="font-bold text-lg text-slate-500 border-b pb-2 mb-4">Questions</h3>
+                    <div id="match-questions" class="space-y-3"></div>
+                </div>
+                <div class="space-y-3">
+                    <h3 class="font-bold text-lg text-slate-500 border-b pb-2 mb-4">Answers</h3>
+                    <div id="match-answers" class="space-y-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: MCQ -->
+        <div id="tab-mcq" class="tab-content hidden animate-fade-in max-w-3xl mx-auto">
+            <div class="mb-6 flex justify-between items-end border-b pb-4">
+                <div>
+                    <h2 class="text-2xl font-bold flex items-center gap-2"><i class="ph ph-check-circle text-blue-600"></i> Tab 2: Quiz (Multiple Choice)</h2>
+                    <p class="text-slate-600 mt-1" id="mcq-subtitle">Select the correct answer. Wrong answers will be re-tested at the end.</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm text-slate-500 font-bold uppercase tracking-wider">Progress</div>
+                    <div class="text-2xl font-black text-blue-700" id="mcq-progress">1 / 20</div>
+                </div>
+            </div>
+            <div id="mcq-complete" class="hidden bg-emerald-100 text-emerald-800 p-8 rounded-2xl text-center shadow-md max-w-lg mx-auto mt-12">
+                <i class="ph-fill ph-check-circle text-6xl mx-auto mb-4 block"></i>
+                <h2 class="text-2xl font-black mb-2">Quiz Complete!</h2>
+                <p class="text-lg">Your first-attempt score is recorded.</p>
+                <div class="text-5xl font-black mt-6 text-emerald-600" id="mcq-final-score">0 / 20</div>
+            </div>
+            <div id="mcq-container" class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 mb-6">
+                <h3 class="text-xl sm:text-2xl font-semibold mb-6 text-slate-800" id="mcq-question">Loading...</h3>
+                <div class="space-y-3" id="mcq-options"></div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Maths -->
+        <div id="tab-calc" class="tab-content hidden animate-fade-in max-w-4xl mx-auto">
+            <div class="mb-6 border-b pb-4">
+                <h2 class="text-2xl font-bold flex items-center gap-2"><i class="ph ph-calculator text-blue-600"></i> Tab 3: Calculations</h2>
+                <p class="text-slate-600 mt-1">Enter your numerical answers below. Do not include units in the box, just the number (rounded as specified).</p>
+            </div>
+            <div id="calc-summary" class="hidden bg-emerald-100 text-emerald-800 p-6 rounded-2xl mb-8 shadow-sm flex items-center justify-between">
+                <div>
+                    <h3 class="font-bold text-xl">Maths Completed</h3>
+                    <p>Review the model workings below to see where you made any errors.</p>
+                </div>
+                <div class="text-4xl font-black" id="calc-score-display">0 / 10</div>
+            </div>
+            <div id="calc-list" class="space-y-6"></div>
+            <button id="calc-submit-btn" onclick="submitCalculations()" class="mt-8 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition-colors text-lg">
+                Check Answers & Reveal Workings
+            </button>
+        </div>
+
+        <!-- Tab 4: Long Answers -->
+        <div id="tab-long" class="tab-content hidden animate-fade-in max-w-4xl mx-auto">
+            <div class="mb-6 border-b pb-4">
+                <h2 class="text-2xl font-bold flex items-center gap-2"><i class="ph ph-pen-nib text-blue-600"></i> Tab 4: Longer Answers</h2>
+                <p class="text-slate-600 mt-1">Structure your 3-step responses carefully. Type or dictate your answer, then tap 'Mark Answer' to get instant feedback.</p>
+            </div>
+            <div id="long-list" class="space-y-8"></div>
+        </div>
+
+        <!-- Tab 5: Dashboard -->
+        <div id="tab-dash" class="tab-content hidden animate-fade-in max-w-3xl mx-auto">
+            <div class="mb-6 border-b pb-4">
+                <h2 class="text-2xl font-bold flex items-center gap-2"><i class="ph ph-chart-bar text-blue-600"></i> Tab 5: Dashboard & Review</h2>
+                <p class="text-slate-600 mt-1">Review your overall performance and generate your scorecard.</p>
+            </div>
+            <div class="bg-white p-8 rounded-2xl shadow-md border border-slate-200">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-8 mb-8 border-b pb-8">
+                    <div class="text-center md:text-left">
+                        <h3 class="text-xl font-bold text-slate-500 uppercase tracking-wider mb-2">Overall Mastery</h3>
+                        <div class="text-6xl font-black text-slate-800" id="dash-percentage">0%</div>
+                        <p class="text-slate-600 font-medium mt-2 max-w-sm" id="dash-feedback">Complete the activities to generate your feedback.</p>
+                    </div>
+                    <div class="relative w-48 h-48 shrink-0">
+                        <svg viewBox="0 0 36 36" class="w-full h-full transform -rotate-90">
+                            <path class="text-slate-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3.8"/>
+                            <path id="dash-svg-path" class="text-blue-500 circle-chart-path" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round"/>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center font-bold text-3xl text-blue-600" id="dash-svg-text">0%</div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-8">
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-between">
+                        <div class="text-sm font-bold text-slate-500 uppercase">1. Match Up</div>
+                        <div class="mt-2 flex items-end justify-between">
+                            <div class="text-2xl font-black text-slate-800"><span id="score-match">0</span> <span class="text-base text-slate-400 font-medium">/ 8</span></div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-between">
+                        <div class="text-sm font-bold text-slate-500 uppercase">2. Quiz (MCQ)</div>
+                        <div class="mt-2 flex items-end justify-between">
+                            <div class="text-2xl font-black text-slate-800"><span id="score-mcq">0</span> <span class="text-base text-slate-400 font-medium">/ 20</span></div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-between">
+                        <div class="text-sm font-bold text-slate-500 uppercase">3. Maths</div>
+                        <div class="mt-2 flex items-end justify-between">
+                            <div class="text-2xl font-black text-slate-800"><span id="score-calc">0</span> <span class="text-base text-slate-400 font-medium">/ 10</span></div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-between">
+                        <div class="text-sm font-bold text-slate-500 uppercase">4. Long Answers</div>
+                        <div class="mt-2 flex items-end justify-between">
+                            <div class="text-2xl font-black text-slate-800"><span id="score-long">0</span> <span class="text-base text-slate-400 font-medium">/ 12</span></div>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="handleScreenshotClick()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg transition-colors text-xl flex justify-center items-center gap-3">
+                    <i class="ph ph-camera text-2xl"></i> Generate Final Scorecard Image
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Message -->
+    <div id="toast-message" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-2xl z-50 flex items-center gap-3 transition-opacity duration-300 opacity-0 pointer-events-none">
+        <i class="ph ph-info text-blue-300 text-xl"></i>
+        <span id="toast-text">Message</span>
+    </div>
+
+    <!-- Scorecard Modal -->
+    <div id="scorecard-modal" class="fixed inset-0 bg-slate-900/80 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white p-6 sm:p-8 rounded-2xl max-w-md w-full shadow-2xl relative border-t-8 border-blue-600 max-h-[90vh] overflow-y-auto">
+            <button onclick="closeScorecard()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <i class="ph ph-x-circle text-3xl"></i>
+            </button>
+            <div class="text-center mb-6">
+                <i class="ph-fill ph-medal text-yellow-500 text-5xl mb-2 mx-auto block"></i>
+                <h2 class="text-3xl font-black text-slate-800">Scorecard</h2>
+                <p class="text-slate-500 font-medium">Ace Your Mock Weaknesses</p>
+            </div>
+            
+            <div class="space-y-4 mb-6 text-sm sm:text-base">
+                <div class="flex justify-between border-b pb-2">
+                    <span class="text-slate-600 font-semibold">Pupil Name:</span>
+                    <span class="font-bold text-slate-800" id="sc-name"></span>
+                </div>
+                <div class="flex justify-between border-b pb-2">
+                    <span class="text-slate-600 font-semibold">Match Up:</span>
+                    <span class="font-bold text-blue-600"><span id="sc-match">0</span> / 8</span>
+                </div>
+                <div class="flex justify-between border-b pb-2">
+                    <span class="text-slate-600 font-semibold">Quiz (MCQ):</span>
+                    <span class="font-bold text-blue-600"><span id="sc-mcq">0</span> / 20</span>
+                </div>
+                <div class="flex justify-between border-b pb-2">
+                    <span class="text-slate-600 font-semibold">Maths:</span>
+                    <span class="font-bold text-blue-600"><span id="sc-calc">0</span> / 10</span>
+                </div>
+                
+                <div class="pt-2 pb-1">
+                    <span class="text-slate-800 font-bold">Long Answers Breakdown:</span>
+                </div>
+                <div class="flex justify-between text-sm pl-4 pb-1">
+                    <span class="text-slate-600">Q1 (Transport):</span>
+                    <span class="font-bold text-blue-600"><span id="sc-l1">0</span> / 3</span>
+                </div>
+                <div class="flex justify-between text-sm pl-4 pb-1">
+                    <span class="text-slate-600">Q2 (Vapes & Data):</span>
+                    <span class="font-bold text-blue-600"><span id="sc-l2">0</span> / 3</span>
+                </div>
+                <div class="flex justify-between text-sm pl-4 pb-1">
+                    <span class="text-slate-600">Q3 (Tumours):</span>
+                    <span class="font-bold text-blue-600"><span id="sc-l3">0</span> / 3</span>
+                </div>
+                <div class="flex justify-between text-sm pl-4 pb-2 border-b">
+                    <span class="text-slate-600">Q4 (Plants):</span>
+                    <span class="font-bold text-blue-600"><span id="sc-l4">0</span> / 3</span>
+                </div>
+                
+                <div class="flex justify-between pt-4 text-lg sm:text-xl">
+                    <span class="font-black text-slate-800">Total Score:</span>
+                    <span class="font-black text-emerald-600"><span id="sc-total">0</span> / 50 (<span id="sc-percent">0</span>%)</span>
+                </div>
+            </div>
+            <div class="text-center text-xs sm:text-sm text-slate-400 border-t pt-4">
+                Generated by Mr Reeve's Revision App<br/>
+                <span id="sc-timestamp"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data Structures
+        const MATCH_UP_DATA = [
+            { id: 1, q: "Why can't large organisms rely solely on diffusion?", a: "They have a small SA:V ratio and long diffusion distances." },
+            { id: 2, q: "What is the true purpose of scientific peer review?", a: "To detect false claims, avoid bias, and check validity." },
+            { id: 3, q: "What is the role of the oil layer in yeast experiments?", a: "It acts as an oxygen barrier to ensure anaerobic respiration." },
+            { id: 4, q: "What happens to lactic acid after exercise?", a: "Transported in blood to the liver and converted back to glucose." },
+            { id: 5, q: "How do secondary tumours form (metastasis)?", a: "Cells break off the primary tumour and travel via blood/lymph." },
+            { id: 6, q: "What is the exact function of bile?", a: "Emulsifies large lipids to increase surface area (does NOT digest them)." },
+            { id: 7, q: "How do plants grow at night without photosynthesis?", a: "They use stored glucose for respiration and to make cellulose." },
+            { id: 8, q: "How does denaturation affect an enzyme?", a: "Changes active site shape so the substrate can no longer bind." }
+        ];
+
+        const MCQ_DATA = [
+            { question: "Why does diffusion fail to meet the metabolic demands of large multicellular organisms?", options: ["They have a large SA:V ratio and short diffusion distances.", "They have a small SA:V ratio and long diffusion distances.", "They do not require oxygen for respiration.", "Their cell membranes are impermeable to gases."], answer: 1 },
+            { question: "When measuring the zone of inhibition on an agar plate, what is the correct formula to calculate its area?", options: ["π × diameter", "π × radius²", "2 × π × radius", "radius² × diameter"], answer: 1 },
+            { question: "A student calculates a percentage change as 100.507%. What is this value rounded to 3 significant figures?", options: ["100.5%", "100%", "101%", "100.51%"], answer: 2 },
+            { question: "What does overlapping error bars (or range bars) on a graph signify about two sets of data?", options: ["There is a significant difference between the sets of data.", "The experiment was conducted incorrectly.", "There is NO significant difference between the sets of data.", "The variables are directly proportional."], answer: 2 },
+            { question: "Which of the following describes the correct metabolic fate of lactic acid?", options: ["It is exhaled through the lungs as a gas.", "It remains in the muscles until it decays.", "It is transported by blood to the liver and converted back to glucose.", "It is converted directly into urea in the kidneys."], answer: 2 },
+            { question: "A scientist places a layer of oil over a yeast and glucose solution. What is the main purpose of this oil?", options: ["To trap water vapour inside the tube.", "To keep the yeast warm.", "To prevent aerobic respiration by acting as an oxygen barrier.", "To provide lipids for the yeast to digest."], answer: 2 },
+            { question: "What is the actual purpose of scientific peer review?", options: ["To repeat the experiment to check for repeatability.", "To detect false claims, avoid bias, and check validity.", "To ensure the experiment is cheap to perform.", "To publish the results as quickly as possible."], answer: 1 },
+            { question: "How does bile aid in lipid digestion?", options: ["It contains lipase which breaks down lipids into fatty acids.", "It is an acid that dissolves the lipid droplets.", "It emulsifies large lipid droplets to increase their surface area.", "It absorbs lipids directly into the bloodstream."], answer: 2 },
+            { question: "Photosynthesis is an endothermic reaction. What does this mean?", options: ["It releases heat to the surroundings.", "It absorbs light energy into the chloroplasts.", "It only occurs at high temperatures.", "It produces glucose without requiring energy."], answer: 1 },
+            { question: "How do plants continue to build cell walls at night?", options: ["They absorb moonlight to perform photosynthesis.", "They absorb cellulose directly from the soil.", "They use stored glucose to make cellulose.", "They stop growing completely at night."], answer: 2 },
+            { question: "Which statement best describes the mechanism of cancer metastasis?", options: ["A virus causes cells to rupture and spread.", "Cells break off a primary tumour, travel in blood/lymph, and divide elsewhere.", "Healthy cells spontaneously mutate at the same time.", "Carcinogens travel through the blood to attack organs."], answer: 1 },
+            { question: "When measuring a clear zone on an agar plate, you measure the diameter as 24mm. What is the radius?", options: ["24mm", "48mm", "12mm", "6mm"], answer: 2 },
+            { question: "A clear zone has a total area of 400mm². The paper disc has an area of 50mm². What value should you record for the clear zone area?", options: ["400mm² (Do not subtract the disc area)", "350mm² (Subtract the disc area)", "450mm² (Add the disc area)", "50mm²"], answer: 0 },
+            { question: "How does smoking primarily link to cardiovascular disease?", options: ["It decreases blood pressure.", "Carbon monoxide reduces oxygen carrying capacity, and nicotine increases heart rate.", "It dilates the coronary arteries.", "It increases the amount of plasma in the blood."], answer: 1 },
+            { question: "What exactly happens when an enzyme denatures?", options: ["The enzyme dies.", "The substrate changes shape to fit the enzyme.", "The active site changes shape, so the substrate no longer fits.", "The enzyme breaks down into amino acids."], answer: 2 },
+            { question: "Convert a zone of inhibition diameter of 1.5 cm into mm.", options: ["0.15 mm", "15 mm", "150 mm", "1.5 mm"], answer: 1 },
+            { question: "Why might an in-vitro (laboratory) test of a vape chemical on capillaries be limited?", options: ["It perfectly replicates the human body.", "It lacks the complex physiological interactions found in an in-vivo whole organism.", "Capillaries in a lab are stronger.", "Vape chemicals only work in plastic tubes."], answer: 1 },
+            { question: "If lipase activity levels off after a bile concentration of 1.5%, what does this mean?", options: ["More bile beyond 1.5% continues to increase the rate of digestion.", "The lipids have completely vanished.", "Increasing bile beyond 1.5% has no further effect on the rate of digestion.", "Bile stops working completely at 1.5%."], answer: 2 },
+            { question: "What process provides the ATP (energy) needed for cell division in plants at night?", options: ["Photosynthesis", "Osmosis", "Respiration using stored glucose", "Active transport"], answer: 2 },
+            { question: "Which of the following is NOT a consequence of a small Surface Area to Volume (SA:V) ratio?", options: ["Slower rate of heat loss.", "Necessity for a dedicated transport system (like a heart and blood).", "Longer diffusion pathways to the center of the organism.", "Rapid diffusion of oxygen to all cells."], answer: 3 }
+        ];
+
+        const CALC_DATA = [
+            { id: 1, q: "Convert 2.4 cm to mm.", a: "24", working: "2.4 × 10 = 24 mm" },
+            { id: 2, q: "Calculate the area of a zone of inhibition with a radius of 12 mm. Use π = 3.14. Round to 3 significant figures.", a: "452", working: "Area = π × r².\nArea = 3.14 × 12².\nArea = 3.14 × 144 = 452.16.\nRounded to 3 s.f. = 452 mm²" },
+            { id: 3, q: "A student calculates percentage change as 45.678%. Round this to 3 significant figures.", a: "45.7", working: "The 3rd sig fig is the 6. The next digit is 7 (which is 5 or more), so round up the 6 to 7.\nResult: 45.7%" },
+            { id: 4, q: "The diameter of a clear zone is 18 mm. What is the radius?", a: "9", working: "Radius = Diameter ÷ 2.\nRadius = 18 ÷ 2 = 9 mm" },
+            { id: 5, q: "Using a radius of 9 mm and π = 3.14, calculate the area of the clear zone. Round to 3 s.f.", a: "254", working: "Area = 3.14 × 9² = 3.14 × 81 = 254.34.\nRounded to 3 s.f. = 254 mm²" },
+            { id: 6, q: "A cube has side lengths of 3 cm. Calculate its Surface Area.", a: "54", working: "One face area = 3 × 3 = 9 cm².\nTotal SA = 6 faces × 9 = 54 cm²" },
+            { id: 7, q: "Calculate the Volume of the same 3 cm cube.", a: "27", working: "Volume = length × width × height\n= 3 × 3 × 3 = 27 cm³" },
+            { id: 8, q: "Using the answers from Q6 and Q7, what is the SA:V ratio of the cube? (Format as X:1)", a: "2:1", working: "SA = 54, V = 27.\nRatio = 54:27. Divide both by 27 = 2:1" },
+            { id: 9, q: "Round 0.05061 to 3 significant figures.", a: "0.0506", working: "Leading zeros don't count. The first sig fig is 5. Next are 0 and 6. The digit after 6 is 1, so keep the 6 as is.\nResult: 0.0506" },
+            { id: 10, q: "A patient's heart rate increases from 60 bpm to 130 bpm. Calculate the percentage increase. Round to 3 s.f.", a: "117", working: "Change = 130 - 60 = 70.\n% Change = (Change / Original) × 100.\n(70 / 60) × 100 = 116.66...%\nRounded to 3 s.f. = 117%" }
+        ];
+
+        const LONG_ANSWERS_DATA = [
+            {
+                id: 1,
+                q: "Explain why large multicellular organisms, such as humans, require a specialised transport system. (3 marks)",
+                model: "1. Large organisms have a small surface area to volume (SA:V) ratio.\n2. This results in a long diffusion distance to the cells in the centre of the body.\n3. Therefore, diffusion alone is too slow / insufficient to supply cells with enough oxygen and glucose for their metabolic demands."
+            },
+            {
+                id: 2,
+                q: "A scientist claims a new vape chemical is safe based on laboratory tests on isolated capillaries. However, data shows the range bars for capillary damage overlap with those of cigarette smokers. Evaluate this claim and explain the purpose of peer review for their findings. (3 marks)",
+                model: "1. Laboratory (in-vitro) tests on isolated capillaries are limited because they do not reflect the complex interactions in a living organism (in-vivo).\n2. Overlapping range/error bars with cigarette smokers mean the difference is not significant (vapes might be just as damaging as smoking).\n3. Peer review is essential to check the validity of the claims, detect any false claims, and prevent bias, not just to repeat the experiment."
+            },
+            {
+                id: 3,
+                q: "Describe how a secondary tumour forms in a different part of the body to the primary tumour. (3 marks)",
+                model: "1. Cancer cells break off from the original (primary) tumour.\n2. These malignant cells enter and travel through the blood stream or lymphatic system.\n3. They settle in another organ and begin to divide uncontrollably to form a secondary tumour."
+            },
+            {
+                id: 4,
+                q: "Photosynthesis is an endothermic reaction. Explain how plants continue to grow at night when they cannot photosynthesise. (3 marks)",
+                model: "1. Photosynthesis absorbs light energy into chloroplasts to make glucose during the day, some of which is stored (e.g., as starch).\n2. At night, the plant uses this stored glucose for respiration to release ATP (energy) needed for cell division.\n3. The stored glucose is also used to synthesise cellulose, which is required for building new cell walls."
+            }
+        ];
+
+        let appState = {
+            studentName: '',
+            scores: { matchUp: 0, mcq: 0, calc: 0 },
+            longMarks: { 1: 0, 2: 0, 3: 0, 4: 0 },
+            totalPossible: 50 // 8 + 20 + 10 + 12
+        };
+
+        // Match Up State
+        let matchBatchIndex = 0;
+        let matchedGlobalIds = [];
+        let matchSelectedQ = null;
+        let matchSelectedA = null;
+        let currentMatchQuestions = [];
+        let currentMatchAnswers = [];
+
+        // MCQ State
+        let mcqQuestions = [...MCQ_DATA];
+        let mcqIndex = 0;
+        let mcqRetryQueue = [];
+        let mcqIsRetryMode = false;
+        let mcqFeedbackStatus = null; // 'correct' or 'incorrect'
+
+        // Helper: Shuffle Array
+        function shuffleArray(array) {
+            let curId = array.length;
+            while (0 !== curId) {
+                let randId = Math.floor(Math.random() * curId);
+                curId -= 1;
+                let tmp = array[curId];
+                array[curId] = array[randId];
+                array[randId] = tmp;
+            }
+            return array;
+        }
+
+        // Helper: Show Toast
+        function showToast(msg) {
+            const toast = document.getElementById('toast-message');
+            document.getElementById('toast-text').innerText = msg;
+            toast.classList.remove('opacity-0');
+            setTimeout(() => { toast.classList.add('opacity-0'); }, 3000);
+        }
+
+        // Navigation Logic
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if(btn.dataset.tab === tabId) {
+                    btn.className = `nav-btn active flex items-center gap-2 px-6 py-3 font-semibold text-sm sm:text-base whitespace-nowrap transition-colors border-b-4 bg-blue-800 text-white border-blue-400`;
+                } else {
+                    btn.className = `nav-btn flex items-center gap-2 px-6 py-3 font-semibold text-sm sm:text-base whitespace-nowrap transition-colors border-b-4 text-blue-300 border-transparent hover:bg-blue-900 hover:text-white`;
+                }
+            });
+
+            if(tabId === 'dash') updateDashboard();
+        }
+
+        function loadMatchUpBatch() {
+            if (matchedGlobalIds.length === MATCH_UP_DATA.length) {
+                document.getElementById('matchup-grid').classList.add('hidden');
+                document.getElementById('matchup-complete').classList.remove('hidden');
+                return;
+            }
+
+            document.getElementById('match-batch-label').innerText = matchBatchIndex + 1;
+            const batchData = MATCH_UP_DATA.slice(matchBatchIndex * 4, (matchBatchIndex + 1) * 4);
+            
+            currentMatchQuestions = shuffleArray([...batchData]);
+            currentMatchAnswers = shuffleArray([...batchData]);
+            
+            matchSelectedQ = null;
+            matchSelectedA = null;
+            renderMatchUp();
+        }
+
+        function renderMatchUp() {
+            const qContainer = document.getElementById('match-questions');
+            const aContainer = document.getElementById('match-answers');
+            qContainer.innerHTML = '';
+            aContainer.innerHTML = '';
+
+            currentMatchQuestions.forEach(item => {
+                if(matchedGlobalIds.includes(item.id)) return;
+                const isSelected = matchSelectedQ === item.id;
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left p-4 rounded-xl shadow-sm border-2 transition-all ${isSelected ? 'bg-blue-100 border-blue-500 scale-[1.02]' : 'bg-white border-slate-200 hover:border-blue-300 hover:shadow-md'}`;
+                btn.innerText = item.q;
+                btn.onclick = () => handleMatchSelect('q', item.id, btn);
+                btn.id = `btn-q-${item.id}`;
+                qContainer.appendChild(btn);
+            });
+
+            currentMatchAnswers.forEach(item => {
+                if(matchedGlobalIds.includes(item.id)) return;
+                const isSelected = matchSelectedA === item.id;
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left p-4 rounded-xl shadow-sm border-2 transition-all ${isSelected ? 'bg-purple-100 border-purple-500 scale-[1.02]' : 'bg-white border-slate-200 hover:border-purple-300 hover:shadow-md'}`;
+                btn.innerText = item.a;
+                btn.onclick = () => handleMatchSelect('a', item.id, btn);
+                btn.id = `btn-a-${item.id}`;
+                aContainer.appendChild(btn);
+            });
+        }
+
+        function handleMatchSelect(type, id, element) {
+            if (type === 'q') {
+                matchSelectedQ = matchSelectedQ === id ? null : id;
+            } else {
+                matchSelectedA = matchSelectedA === id ? null : id;
+            }
+            renderMatchUp();
+
+            if (matchSelectedQ !== null && matchSelectedA !== null) {
+                if (matchSelectedQ === matchSelectedA) {
+                    // Match
+                    matchedGlobalIds.push(matchSelectedQ);
+                    appState.scores.matchUp++;
+                    matchSelectedQ = null;
+                    matchSelectedA = null;
+                    
+                    // Check if batch is done
+                    const batchMatched = currentMatchQuestions.filter(q => matchedGlobalIds.includes(q.id)).length;
+                    if (batchMatched === 4 && matchBatchIndex === 0) {
+                        setTimeout(() => {
+                            matchBatchIndex = 1;
+                            loadMatchUpBatch();
+                        }, 600);
+                    } else {
+                        renderMatchUp();
+                    }
+                } else {
+                    // Mismatch
+                    const qBtn = document.getElementById(`btn-q-${matchSelectedQ}`);
+                    const aBtn = document.getElementById(`btn-a-${matchSelectedA}`);
+                    if(qBtn) { qBtn.classList.add('bg-red-100', 'border-red-500', 'animate-shake'); qBtn.classList.remove('bg-blue-100', 'border-blue-500'); }
+                    if(aBtn) { aBtn.classList.add('bg-red-100', 'border-red-500', 'animate-shake'); aBtn.classList.remove('bg-purple-100', 'border-purple-500'); }
+                    
+                    setTimeout(() => {
+                        matchSelectedQ = null;
+                        matchSelectedA = null;
+                        renderMatchUp();
+                    }, 800);
+                }
+            }
+        }
+
+        function renderMcq() {
+            if (mcqIndex >= mcqQuestions.length) {
+                if (mcqIsRetryMode || mcqRetryQueue.length > 0) {
+                    if(mcqRetryQueue.length > 0) {
+                        mcqQuestions = [...mcqRetryQueue];
+                        mcqRetryQueue = [];
+                        mcqIndex = 0;
+                        mcqIsRetryMode = true;
+                        document.getElementById('mcq-subtitle').innerHTML = '<span class="text-orange-600 font-semibold">Retry Mode: Re-answering missed questions</span>';
+                    } else {
+                        finishMcq();
+                        return;
+                    }
+                } else {
+                    finishMcq();
+                    return;
+                }
+            }
+
+            const q = mcqQuestions[mcqIndex];
+            document.getElementById('mcq-progress').innerText = `${mcqIndex + 1} / ${mcqQuestions.length}`;
+            document.getElementById('mcq-question').innerText = q.question;
+            
+            const optionsContainer = document.getElementById('mcq-options');
+            optionsContainer.innerHTML = '';
+            
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left p-4 rounded-xl border-2 transition-all font-medium text-lg bg-white border-slate-200 hover:border-blue-400 hover:bg-blue-50`;
+                btn.innerText = opt;
+                btn.onclick = () => handleMcqSelect(idx, btn, q.answer);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function handleMcqSelect(selectedIdx, btnElement, correctIdx) {
+            if (mcqFeedbackStatus !== null) return;
+            
+            const isCorrect = selectedIdx === correctIdx;
+            const allBtns = document.getElementById('mcq-options').children;
+
+            // Apply styling
+            for(let i=0; i<allBtns.length; i++) {
+                allBtns[i].className = "w-full text-left p-4 rounded-xl border-2 font-medium text-lg bg-slate-50 border-slate-200 text-slate-400 opacity-60 pointer-events-none";
+                if(i === selectedIdx) {
+                    if(isCorrect) {
+                        allBtns[i].className = "w-full text-left p-4 rounded-xl border-2 font-medium text-lg bg-emerald-100 border-emerald-500 text-emerald-900 pointer-events-none";
+                    } else {
+                        allBtns[i].className = "w-full text-left p-4 rounded-xl border-2 font-medium text-lg bg-red-100 border-red-500 text-red-900 pointer-events-none animate-shake";
+                    }
+                }
+                if(i === correctIdx && !isCorrect) {
+                     allBtns[i].className = "w-full text-left p-4 rounded-xl border-2 font-medium text-lg border-emerald-500 bg-emerald-50 text-emerald-800 border-dashed pointer-events-none";
+                }
+            }
+
+            mcqFeedbackStatus = isCorrect ? 'correct' : 'incorrect';
+
+            if (isCorrect) {
+                if (!mcqIsRetryMode) appState.scores.mcq++;
+            } else {
+                mcqRetryQueue.push(mcqQuestions[mcqIndex]);
+            }
+
+            setTimeout(() => {
+                mcqFeedbackStatus = null;
+                mcqIndex++;
+                renderMcq();
+            }, 1500);
+        }
+
+        function finishMcq() {
+            document.getElementById('mcq-container').classList.add('hidden');
+            document.getElementById('mcq-complete').classList.remove('hidden');
+            document.getElementById('mcq-final-score').innerText = `${appState.scores.mcq} / 20`;
+            document.getElementById('mcq-progress').parentElement.classList.add('hidden');
+        }
+
+        function renderCalc() {
+            const list = document.getElementById('calc-list');
+            list.innerHTML = '';
+            
+            CALC_DATA.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = "bg-white p-5 rounded-2xl shadow-sm border border-slate-200";
+                div.innerHTML = `
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="flex-1">
+                            <span class="font-bold text-blue-800 mr-2">Q${index + 1}.</span>
+                            <span class="font-semibold text-slate-700">${item.q}</span>
+                        </div>
+                        <div class="w-full md:w-48 shrink-0 relative">
+                            <input type="text" id="calc-input-${item.id}" placeholder="Value..." class="w-full p-3 border-2 rounded-xl text-center font-bold text-lg outline-none transition-colors border-slate-300 focus:border-blue-500">
+                            <div id="calc-icon-${item.id}" class="absolute -right-3 -top-3 bg-white rounded-full p-1 shadow-md hidden"></div>
+                        </div>
+                    </div>
+                    <div id="calc-working-${item.id}" class="mt-4 p-4 bg-slate-50 border-l-4 border-blue-400 rounded-r-xl hidden">
+                        <div class="text-sm font-bold text-slate-500 uppercase mb-1">Model Answer & Working</div>
+                        <div class="font-medium text-slate-800 whitespace-pre-line">${item.working}</div>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function submitCalculations() {
+            let correctCount = 0;
+            CALC_DATA.forEach(item => {
+                const input = document.getElementById(`calc-input-${item.id}`);
+                const iconContainer = document.getElementById(`calc-icon-${item.id}`);
+                const workingDiv = document.getElementById(`calc-working-${item.id}`);
+                
+                input.disabled = true;
+                const userAns = input.value.trim();
+                const isCorrect = userAns === item.a;
+                
+                if (isCorrect) {
+                    correctCount++;
+                    input.className = "w-full p-3 border-2 rounded-xl text-center font-bold text-lg border-emerald-400 bg-emerald-50 text-emerald-700";
+                    iconContainer.innerHTML = `<i class="ph-fill ph-check-circle text-emerald-500 text-2xl"></i>`;
+                } else {
+                    input.className = "w-full p-3 border-2 rounded-xl text-center font-bold text-lg border-red-400 bg-red-50 text-red-700";
+                    iconContainer.innerHTML = `<i class="ph-fill ph-x-circle text-red-500 text-2xl"></i>`;
+                }
+                iconContainer.classList.remove('hidden');
+                workingDiv.classList.remove('hidden');
+            });
+            
+            appState.scores.calc = correctCount;
+            document.getElementById('calc-submit-btn').classList.add('hidden');
+            document.getElementById('calc-summary').classList.remove('hidden');
+            document.getElementById('calc-score-display').innerText = `${correctCount} / 10`;
+            document.getElementById('calc-summary').classList.add('flex');
+        }
+
+        let dictationRecognition = null;
+        let activeDictationId = null;
+
+        function renderLongAnswers() {
+            const list = document.getElementById('long-list');
+            list.innerHTML = '';
+            
+            LONG_ANSWERS_DATA.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = "bg-white p-6 rounded-2xl shadow-sm border border-slate-200";
+                div.id = `long-container-${item.id}`;
+                
+                div.innerHTML = `
+                    <h3 class="font-bold text-lg text-slate-800 mb-4">
+                        <span class="text-blue-600 mr-2">Q${index + 1}.</span> ${item.q}
+                    </h3>
+                    <div class="relative">
+                        <textarea id="long-input-${item.id}" placeholder="Type or dictate your answer here..." class="w-full h-32 p-4 border-2 rounded-xl outline-none resize-none transition-colors border-slate-300 focus:border-blue-500 bg-slate-50 text-slate-800"></textarea>
+                        <button id="dictate-btn-${item.id}" onclick="toggleDictation(${item.id})" class="absolute bottom-3 right-3 p-2 rounded-full shadow-md transition-all bg-white text-slate-600 hover:bg-slate-100 border border-slate-200" title="Dictate Answer">
+                            <i class="ph-fill ph-microphone text-xl"></i>
+                        </button>
+                    </div>
+                    <button id="mark-btn-${item.id}" onclick="markLongAnswer(${item.id})" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-md transition-colors">
+                        Mark Answer & Get Feedback
+                    </button>
+                    <div id="feedback-area-${item.id}" class="hidden mt-6 border-t pt-6 animate-fade-in"></div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function toggleDictation(id) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                showToast("Speech recognition is not supported in this browser. Please type.");
+                return;
+            }
+
+            const btn = document.getElementById(`dictate-btn-${id}`);
+            const input = document.getElementById(`long-input-${id}`);
+
+            if (activeDictationId === id && dictationRecognition) {
+                dictationRecognition.stop();
+                return;
+            }
+
+            if (dictationRecognition) dictationRecognition.stop();
+
+            dictationRecognition = new SpeechRecognition();
+            dictationRecognition.continuous = false;
+            dictationRecognition.interimResults = false;
+            dictationRecognition.lang = 'en-GB';
+
+            dictationRecognition.onstart = () => {
+                activeDictationId = id;
+                btn.classList.add('animate-dictate');
+                showToast("Listening... Speak your answer.");
+            };
+
+            dictationRecognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                input.value = input.value ? input.value + " " + transcript : transcript;
+            };
+
+            dictationRecognition.onerror = (event) => {
+                showToast(`Microphone error: ${event.error}`);
+            };
+
+            dictationRecognition.onend = () => {
+                activeDictationId = null;
+                btn.classList.remove('animate-dictate');
+            };
+
+            dictationRecognition.start();
+        }
+
+        function analyzeLongAnswer(id, text) {
+            const t = text.toLowerCase();
+            let fb = [];
+            let score = 0;
+
+            if (id === 1) { 
+                if (t.includes("small") && (t.includes("surface area") || t.includes("sa:v") || t.includes("sa to vol"))) {
+                    score++; fb.push({ success: true, msg: "Identified the small Surface Area to Volume (SA:V) ratio." });
+                } else {
+                    fb.push({ success: false, msg: "Missed stating that large organisms have a small Surface Area to Volume (SA:V) ratio." });
+                }
+                if (t.includes("distance") || t.includes("pathway") || t.includes("centre")) {
+                    score++; fb.push({ success: true, msg: "Correctly noted the long diffusion distance/pathway." });
+                } else {
+                    fb.push({ success: false, msg: "Missed mentioning the long diffusion distance to cells in the centre of the body." });
+                }
+                if (t.includes("slow") || t.includes("insufficient") || t.includes("metabolic") || t.includes("demand") || t.includes("enough")) {
+                    score++; fb.push({ success: true, msg: "Stated that diffusion alone is too slow / insufficient for metabolic demands." });
+                } else {
+                    fb.push({ success: false, msg: "Forgot to conclude that diffusion is too slow/insufficient to supply enough oxygen/glucose." });
+                }
+            } 
+            else if (id === 2) { 
+                if (t.includes("in-vitro") || t.includes("in vivo") || t.includes("isolated") || t.includes("complex") || t.includes("whole organism")) {
+                    score++; fb.push({ success: true, msg: "Explained the limitation of isolated capillaries vs complex whole organisms (in-vivo vs in-vitro)." });
+                } else {
+                    fb.push({ success: false, msg: "Missed the limitation: isolated capillaries don't reflect the complex interactions of a living organism." });
+                }
+                if (t.includes("overlap") || t.includes("significant") || t.includes("range bar") || t.includes("error bar") || t.includes("smoker")) {
+                    score++; fb.push({ success: true, msg: "Correctly identified the significance of overlapping range bars with smokers." });
+                } else {
+                    fb.push({ success: false, msg: "Forgot to mention that overlapping range bars mean the difference is not significant compared to smokers." });
+                }
+                if (t.includes("valid") || t.includes("false claim") || t.includes("bias") || t.includes("check")) {
+                    score++; fb.push({ success: true, msg: "Identified the true purpose of peer review (validity, detecting false claims, avoiding bias)." });
+                } else {
+                    fb.push({ success: false, msg: "You missed the true purpose of peer review (to check validity, avoid bias, or detect false claims)." });
+                }
+            }
+            else if (id === 3) { 
+                if (t.includes("break") || t.includes("detach") || t.includes("original") || t.includes("primary")) {
+                    score++; fb.push({ success: true, msg: "Noted that cells break off from the primary/original tumour." });
+                } else {
+                    fb.push({ success: false, msg: "Missed stating that cancer cells break off/detach from the primary tumour." });
+                }
+                if (t.includes("blood") || t.includes("lymph") || t.includes("travel") || t.includes("stream")) {
+                    score++; fb.push({ success: true, msg: "Correctly stated they travel through the blood stream or lymphatic system." });
+                } else {
+                    fb.push({ success: false, msg: "Missed explaining the transport mechanism (travelling in the blood or lymph)." });
+                }
+                if (t.includes("secondary") || t.includes("divide") || t.includes("another") || t.includes("elsewhere") || t.includes("organ")) {
+                    score++; fb.push({ success: true, msg: "Identified that they settle elsewhere and divide to form a secondary tumour." });
+                } else {
+                    fb.push({ success: false, msg: "Forgot to mention them settling in a new organ and dividing to form a secondary tumour." });
+                }
+            }
+            else if (id === 4) { 
+                if (t.includes("store") || t.includes("starch") || (t.includes("glucose") && t.includes("day"))) {
+                    score++; fb.push({ success: true, msg: "Mentioned that plants use glucose made and stored during the day." });
+                } else {
+                    fb.push({ success: false, msg: "Missed identifying the source of energy (glucose that was stored during the day)." });
+                }
+                if (t.includes("respir") || t.includes("atp") || t.includes("energy") || t.includes("division")) {
+                    score++; fb.push({ success: true, msg: "Stated that stored glucose is used for respiration to release energy (ATP) for cell division." });
+                } else {
+                    fb.push({ success: false, msg: "Forgot to mention respiration releasing energy (ATP) needed for cell division." });
+                }
+                if (t.includes("cellulose") || t.includes("cell wall")) {
+                    score++; fb.push({ success: true, msg: "Correctly noted that glucose is used to synthesise cellulose for new cell walls." });
+                } else {
+                    fb.push({ success: false, msg: "Missed stating that glucose is required to make cellulose for building new cell walls." });
+                }
+            }
+            return { score, fb };
+        }
+
+        function markLongAnswer(id) {
+            const inputEl = document.getElementById(`long-input-${id}`);
+            const text = inputEl.value.trim();
+            if (text.length < 5) {
+                showToast("Please write a longer answer before marking.");
+                return;
+            }
+
+            inputEl.disabled = true;
+            inputEl.classList.remove('bg-slate-50');
+            inputEl.classList.add('bg-slate-100', 'text-slate-600');
+            document.getElementById(`dictate-btn-${id}`).classList.add('hidden');
+            document.getElementById(`mark-btn-${id}`).classList.add('hidden');
+
+            const analysis = analyzeLongAnswer(id, text);
+            appState.longMarks[id] = analysis.score; // Auto-set initial score
+            
+            const modelData = LONG_ANSWERS_DATA.find(d => d.id === id).model;
+            const fbArea = document.getElementById(`feedback-area-${id}`);
+            
+            let fbHtml = `<div class="bg-slate-50 p-5 rounded-xl border border-slate-200 mb-4">
+                <h4 class="font-bold text-slate-700 mb-3 uppercase tracking-wider text-sm flex items-center gap-2">
+                    <i class="ph ph-chart-bar text-lg"></i> Automated Feedback Analysis
+                </h4><ul class="space-y-2">`;
+                
+            analysis.fb.forEach(f => {
+                const icon = f.success ? '✅' : '❌';
+                const color = f.success ? 'text-emerald-700' : 'text-red-600';
+                fbHtml += `<li class="text-sm md:text-base font-medium ${color}">${icon} ${f.msg}</li>`;
+            });
+            fbHtml += `</ul></div>`;
+
+            fbHtml += `<div class="bg-blue-50 p-5 rounded-xl mb-4 border border-blue-200">
+                <div class="font-bold text-blue-900 mb-2 uppercase tracking-wider text-sm flex items-center gap-2">
+                    <i class="ph ph-check-circle text-lg"></i> AQA Model Answer / Marking Points:
+                </div>
+                <div class="text-slate-800 whitespace-pre-line font-medium">${modelData}</div>
+            </div>`;
+
+            // Score Selector
+            fbHtml += `<div class="flex flex-col md:flex-row items-center justify-between bg-slate-100 p-4 rounded-xl border border-slate-200">
+                <div class="mb-3 md:mb-0">
+                    <span class="font-bold text-slate-800 block">Confirm Your Score</span>
+                    <span class="text-sm text-slate-500 font-medium">We suggested ${analysis.score} based on keywords. Adjust if needed.</span>
+                </div>
+                <div class="flex gap-2" id="score-btns-${id}">
+                    ${[0, 1, 2, 3].map(m => `
+                        <button onclick="setLongScore(${id}, ${m})" id="btn-score-${id}-${m}" class="w-12 h-12 rounded-xl font-bold text-lg transition-all shadow-sm ${analysis.score === m ? 'bg-emerald-500 text-white border-2 border-emerald-600 scale-110' : 'bg-white text-slate-600 border border-slate-300 hover:bg-emerald-50'}">
+                            ${m}
+                        </button>
+                    `).join('')}
+                </div>
+            </div>`;
+
+            fbArea.innerHTML = fbHtml;
+            fbArea.classList.remove('hidden');
+        }
+
+        function setLongScore(qId, score) {
+            appState.longMarks[qId] = score;
+            [0, 1, 2, 3].forEach(m => {
+                const btn = document.getElementById(`btn-score-${qId}-${m}`);
+                if (m === score) {
+                    btn.className = "w-12 h-12 rounded-xl font-bold text-lg transition-all shadow-sm bg-emerald-500 text-white border-2 border-emerald-600 scale-110";
+                } else {
+                    btn.className = "w-12 h-12 rounded-xl font-bold text-lg transition-all shadow-sm bg-white text-slate-600 border border-slate-300 hover:bg-emerald-50";
+                }
+            });
+        }
+
+        function getLongTotal() {
+            return Object.values(appState.longMarks).reduce((a, b) => a + b, 0);
+        }
+
+        function updateDashboard() {
+            const currentTotal = appState.scores.matchUp + appState.scores.mcq + appState.scores.calc + getLongTotal();
+            const percent = Math.round((currentTotal / appState.totalPossible) * 100) || 0;
+
+            document.getElementById('dash-percentage').innerText = `${percent}%`;
+            document.getElementById('dash-svg-text').innerText = `${percent}%`;
+            
+            // SVG dasharray (circumference is 100 due to radius ~15.9)
+            document.getElementById('dash-svg-path').style.strokeDasharray = `${percent}, 100`;
+
+            let fbText = "Complete the activities to generate your feedback.";
+            if (percent >= 80) fbText = "Excellent progress! You have addressed these weaknesses masterfully.";
+            else if (percent >= 60) fbText = "Good effort. Review the remaining gaps in your knowledge.";
+            else if (percent > 0) fbText = "Keep working at it. Repetition is key to locking in these concepts.";
+            document.getElementById('dash-feedback').innerText = fbText;
+
+            document.getElementById('score-match').innerText = appState.scores.matchUp;
+            document.getElementById('score-mcq').innerText = appState.scores.mcq;
+            document.getElementById('score-calc').innerText = appState.scores.calc;
+            document.getElementById('score-long').innerText = getLongTotal();
+        }
+
+        function handleScreenshotClick() {
+            if (!appState.studentName.trim()) {
+                const name = window.prompt("Please enter your name for the scorecard:");
+                if (name) {
+                    appState.studentName = name;
+                    openScorecard();
+                }
+            } else {
+                openScorecard();
+            }
+        }
+
+        function openScorecard() {
+            const longTotal = getLongTotal();
+            const grandTotal = appState.scores.matchUp + appState.scores.mcq + appState.scores.calc + longTotal;
+            const percent = Math.round((grandTotal / appState.totalPossible) * 100) || 0;
+
+            document.getElementById('sc-name').innerText = appState.studentName;
+            document.getElementById('sc-match').innerText = appState.scores.matchUp;
+            document.getElementById('sc-mcq').innerText = appState.scores.mcq;
+            document.getElementById('sc-calc').innerText = appState.scores.calc;
+            
+            document.getElementById('sc-l1').innerText = appState.longMarks[1];
+            document.getElementById('sc-l2').innerText = appState.longMarks[2];
+            document.getElementById('sc-l3').innerText = appState.longMarks[3];
+            document.getElementById('sc-l4').innerText = appState.longMarks[4];
+
+            document.getElementById('sc-total').innerText = grandTotal;
+            document.getElementById('sc-percent').innerText = percent;
+            document.getElementById('sc-timestamp').innerText = new Date().toLocaleString();
+
+            document.getElementById('scorecard-modal').classList.remove('hidden');
+            document.getElementById('scorecard-modal').classList.add('flex');
+        }
+
+        function closeScorecard() {
+            document.getElementById('scorecard-modal').classList.add('hidden');
+            document.getElementById('scorecard-modal').classList.remove('flex');
+        }
+
+        // Initialize App on Load
+        window.onload = () => {
+            loadMatchUpBatch();
+            renderMcq();
+            renderCalc();
+            renderLongAnswers();
+        };
+    </script>
+</body>
+</html>
