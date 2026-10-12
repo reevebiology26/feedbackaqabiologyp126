@@ -23,6 +23,11 @@
             0%, 100% { background-color: #ef4444; color: white; }
             50% { background-color: #fca5a5; color: #7f1d1d; }
         }
+        @keyframes streakPop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2) rotate(5deg); }
+            100% { transform: scale(1) rotate(0); }
+        }
         .animate-fade-in {
             animation: fadeIn 0.4s ease-out forwards;
         }
@@ -31,6 +36,9 @@
         }
         .animate-dictate {
             animation: pulse-red 1.5s infinite;
+        }
+        .animate-streak-pop {
+            animation: streakPop 0.4s ease-out;
         }
         .hidden { display: none !important; }
         
@@ -43,15 +51,24 @@
 <body class="bg-slate-50 font-sans text-slate-800 flex flex-col min-h-screen">
 
     <header class="bg-blue-900 text-white shadow-md z-10 sticky top-0">
-        <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
                 <h1 class="text-2xl font-bold tracking-tight">Ace Your Mock Weaknesses</h1>
                 <p class="text-blue-200 text-sm font-medium">Created by Mr Reeve | AQA Biology Revision</p>
             </div>
-            <button onclick="handleScreenshotClick()" class="mt-4 sm:mt-0 flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-5 py-2 rounded-full font-bold shadow-lg transition-transform transform hover:scale-105">
-                <i class="ph ph-camera text-xl"></i>
-                Screenshot Your Score
-            </button>
+            
+            <div class="flex items-center gap-4">
+                <!-- Gamified Streak Banner -->
+                <div id="streak-banner" class="bg-orange-500 text-white font-bold px-4 py-2 rounded-full shadow-lg flex items-center gap-2 transition-colors duration-300">
+                    <i class="ph-fill ph-fire text-xl"></i> 
+                    <span>Streak: <span id="streak-counter" class="text-xl">0</span></span>
+                </div>
+
+                <button onclick="handleScreenshotClick()" class="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-5 py-2 rounded-full font-bold shadow-lg transition-transform transform hover:scale-105">
+                    <i class="ph ph-camera text-xl"></i>
+                    <span class="hidden sm:inline">Screenshot</span>
+                </button>
+            </div>
         </div>
         
         <div class="flex overflow-x-auto bg-blue-950">
@@ -263,7 +280,53 @@
     </div>
 
     <script>
-        // Data Structures
+        // Gamification & Audio System using Web Audio API and SpeechSynthesis
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playTone(freq, type, duration, vol) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        const SoundFX = {
+            success: () => {
+                playTone(600, 'sine', 0.1, 0.3);
+                setTimeout(() => playTone(800, 'sine', 0.2, 0.3), 100);
+            },
+            error: () => {
+                playTone(300, 'sawtooth', 0.2, 0.3);
+                setTimeout(() => playTone(250, 'sawtooth', 0.3, 0.3), 150);
+            },
+            speakPraise: () => {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel(); // Stop anything currently speaking
+                    const phrases = ["Locked in!", "On fire!", "In the zone!", "You ate that!"];
+                    const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+                    
+                    const utterance = new SpeechSynthesisUtterance(randomPhrase);
+                    utterance.rate = 1.1;
+                    utterance.pitch = 1.2;
+                    window.speechSynthesis.speak(utterance);
+                } else {
+                    SoundFX.success(); // Fallback if TTS is unsupported
+                }
+            }
+        };
+
+        // App Data
         const MATCH_UP_DATA = [
             { id: 1, q: "Why can't large organisms rely solely on diffusion?", a: "They have a small SA:V ratio and long diffusion distances." },
             { id: 2, q: "What is the true purpose of scientific peer review?", a: "To detect false claims, avoid bias, and check validity." },
@@ -299,10 +362,10 @@
         ];
 
         const CALC_DATA = [
-            { id: 1, q: "Convert 2.4 cm to mm.", a: "24", working: "2.4 × 10 = 24 mm" },
+            { id: 1, q: "A plant's height increases from 12 cm to 15 cm over a week. Calculate the percentage increase.", a: "25", working: "Change = 15 - 12 = 3 cm\n% Increase = (Change / Original) × 100\n= (3 / 12) × 100\n= 0.25 × 100 = 25%" },
             { id: 2, q: "Calculate the area of a zone of inhibition with a radius of 12 mm. Use π = 3.14. Round to 3 significant figures.", a: "452", working: "Area = π × r².\nArea = 3.14 × 12².\nArea = 3.14 × 144 = 452.16.\nRounded to 3 s.f. = 452 mm²" },
             { id: 3, q: "A student calculates percentage change as 45.678%. Round this to 3 significant figures.", a: "45.7", working: "The 3rd sig fig is the 6. The next digit is 7 (which is 5 or more), so round up the 6 to 7.\nResult: 45.7%" },
-            { id: 4, q: "The diameter of a clear zone is 18 mm. What is the radius?", a: "9", working: "Radius = Diameter ÷ 2.\nRadius = 18 ÷ 2 = 9 mm" },
+            { id: 4, q: "After applying an antibiotic, a bacterial colony's population decreases from 80 to 60. Calculate the percentage decrease.", a: "25", working: "Change = 80 - 60 = 20\n% Decrease = (Change / Original) × 100\n= (20 / 80) × 100\n= 0.25 × 100 = 25%" },
             { id: 5, q: "Using a radius of 9 mm and π = 3.14, calculate the area of the clear zone. Round to 3 s.f.", a: "254", working: "Area = 3.14 × 9² = 3.14 × 81 = 254.34.\nRounded to 3 s.f. = 254 mm²" },
             { id: 6, q: "A cube has side lengths of 3 cm. Calculate its Surface Area.", a: "54", working: "One face area = 3 × 3 = 9 cm².\nTotal SA = 6 faces × 9 = 54 cm²" },
             { id: 7, q: "Calculate the Volume of the same 3 cm cube.", a: "27", working: "Volume = length × width × height\n= 3 × 3 × 3 = 27 cm³" },
@@ -312,26 +375,10 @@
         ];
 
         const LONG_ANSWERS_DATA = [
-            {
-                id: 1,
-                q: "Explain why large multicellular organisms, such as humans, require a specialised transport system. (3 marks)",
-                model: "1. Large organisms have a small surface area to volume (SA:V) ratio.\n2. This results in a long diffusion distance to the cells in the centre of the body.\n3. Therefore, diffusion alone is too slow / insufficient to supply cells with enough oxygen and glucose for their metabolic demands."
-            },
-            {
-                id: 2,
-                q: "A scientist claims a new vape chemical is safe based on laboratory tests on isolated capillaries. However, data shows the range bars for capillary damage overlap with those of cigarette smokers. Evaluate this claim and explain the purpose of peer review for their findings. (3 marks)",
-                model: "1. Laboratory (in-vitro) tests on isolated capillaries are limited because they do not reflect the complex interactions in a living organism (in-vivo).\n2. Overlapping range/error bars with cigarette smokers mean the difference is not significant (vapes might be just as damaging as smoking).\n3. Peer review is essential to check the validity of the claims, detect any false claims, and prevent bias, not just to repeat the experiment."
-            },
-            {
-                id: 3,
-                q: "Describe how a secondary tumour forms in a different part of the body to the primary tumour. (3 marks)",
-                model: "1. Cancer cells break off from the original (primary) tumour.\n2. These malignant cells enter and travel through the blood stream or lymphatic system.\n3. They settle in another organ and begin to divide uncontrollably to form a secondary tumour."
-            },
-            {
-                id: 4,
-                q: "Photosynthesis is an endothermic reaction. Explain how plants continue to grow at night when they cannot photosynthesise. (3 marks)",
-                model: "1. Photosynthesis absorbs light energy into chloroplasts to make glucose during the day, some of which is stored (e.g., as starch).\n2. At night, the plant uses this stored glucose for respiration to release ATP (energy) needed for cell division.\n3. The stored glucose is also used to synthesise cellulose, which is required for building new cell walls."
-            }
+            { id: 1, q: "Explain why large multicellular organisms, such as humans, require a specialised transport system. (3 marks)", model: "1. Large organisms have a small surface area to volume (SA:V) ratio.\n2. This results in a long diffusion distance to the cells in the centre of the body.\n3. Therefore, diffusion alone is too slow / insufficient to supply cells with enough oxygen and glucose for their metabolic demands." },
+            { id: 2, q: "A scientist claims a new vape chemical is safe based on laboratory tests on isolated capillaries. However, data shows the range bars for capillary damage overlap with those of cigarette smokers. Evaluate this claim and explain the purpose of peer review for their findings. (3 marks)", model: "1. Laboratory (in-vitro) tests on isolated capillaries are limited because they do not reflect the complex interactions in a living organism (in-vivo).\n2. Overlapping range/error bars with cigarette smokers mean the difference is not significant (vapes might be just as damaging as smoking).\n3. Peer review is essential to check the validity of the claims, detect any false claims, and prevent bias, not just to repeat the experiment." },
+            { id: 3, q: "Describe how a secondary tumour forms in a different part of the body to the primary tumour. (3 marks)", model: "1. Cancer cells break off from the original (primary) tumour.\n2. These malignant cells enter and travel through the blood stream or lymphatic system.\n3. They settle in another organ and begin to divide uncontrollably to form a secondary tumour." },
+            { id: 4, q: "Photosynthesis is an endothermic reaction. Explain how plants continue to grow at night when they cannot photosynthesise. (3 marks)", model: "1. Photosynthesis absorbs light energy into chloroplasts to make glucose during the day, some of which is stored (e.g., as starch).\n2. At night, the plant uses this stored glucose for respiration to release ATP (energy) needed for cell division.\n3. The stored glucose is also used to synthesise cellulose, which is required for building new cell walls." }
         ];
 
         let appState = {
@@ -340,6 +387,37 @@
             longMarks: { 1: 0, 2: 0, 3: 0, 4: 0 },
             totalPossible: 50 // 8 + 20 + 10 + 12
         };
+
+        // Gamified Streak Tracking
+        let currentStreak = 0;
+        function updateStreak(isCorrect) {
+            const streakCounter = document.getElementById('streak-counter');
+            const streakBanner = document.getElementById('streak-banner');
+            
+            if (isCorrect) {
+                currentStreak++;
+                // Visual pop animation
+                streakBanner.classList.remove('animate-streak-pop');
+                void streakBanner.offsetWidth; // Force reflow
+                streakBanner.classList.add('animate-streak-pop');
+            } else {
+                currentStreak = 0;
+            }
+            
+            streakCounter.innerText = currentStreak;
+            
+            // Color changing based on streak intensity
+            if (currentStreak >= 10) {
+                streakBanner.classList.remove('bg-orange-500', 'bg-purple-500');
+                streakBanner.classList.add('bg-pink-600');
+            } else if (currentStreak >= 5) {
+                streakBanner.classList.remove('bg-orange-500', 'bg-pink-600');
+                streakBanner.classList.add('bg-purple-500');
+            } else {
+                streakBanner.classList.remove('bg-purple-500', 'bg-pink-600');
+                streakBanner.classList.add('bg-orange-500');
+            }
+        }
 
         // Match Up State
         let matchBatchIndex = 0;
@@ -356,7 +434,6 @@
         let mcqIsRetryMode = false;
         let mcqFeedbackStatus = null; // 'correct' or 'incorrect'
 
-        // Helper: Shuffle Array
         function shuffleArray(array) {
             let curId = array.length;
             while (0 !== curId) {
@@ -369,7 +446,6 @@
             return array;
         }
 
-        // Helper: Show Toast
         function showToast(msg) {
             const toast = document.getElementById('toast-message');
             document.getElementById('toast-text').innerText = msg;
@@ -377,7 +453,6 @@
             setTimeout(() => { toast.classList.add('opacity-0'); }, 3000);
         }
 
-        // Navigation Logic
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(`tab-${tabId}`).classList.remove('hidden');
@@ -456,7 +531,9 @@
                     matchSelectedQ = null;
                     matchSelectedA = null;
                     
-                    // Check if batch is done
+                    SoundFX.success(); // Play success sound
+                    updateStreak(true); // Update streak
+
                     const batchMatched = currentMatchQuestions.filter(q => matchedGlobalIds.includes(q.id)).length;
                     if (batchMatched === 4 && matchBatchIndex === 0) {
                         setTimeout(() => {
@@ -473,6 +550,9 @@
                     if(qBtn) { qBtn.classList.add('bg-red-100', 'border-red-500', 'animate-shake'); qBtn.classList.remove('bg-blue-100', 'border-blue-500'); }
                     if(aBtn) { aBtn.classList.add('bg-red-100', 'border-red-500', 'animate-shake'); aBtn.classList.remove('bg-purple-100', 'border-purple-500'); }
                     
+                    SoundFX.error(); // Play error sound
+                    updateStreak(false); // Break streak
+
                     setTimeout(() => {
                         matchSelectedQ = null;
                         matchSelectedA = null;
@@ -542,8 +622,12 @@
 
             if (isCorrect) {
                 if (!mcqIsRetryMode) appState.scores.mcq++;
+                SoundFX.speakPraise(); // Trigger TTS rather than standard positive sound
+                updateStreak(true); // Maintain streak
             } else {
                 mcqRetryQueue.push(mcqQuestions[mcqIndex]);
+                SoundFX.error(); // Standard negative sound
+                updateStreak(false); // Break streak
             }
 
             setTimeout(() => {
@@ -589,32 +673,44 @@
 
         function submitCalculations() {
             let correctCount = 0;
-            CALC_DATA.forEach(item => {
-                const input = document.getElementById(`calc-input-${item.id}`);
-                const iconContainer = document.getElementById(`calc-icon-${item.id}`);
-                const workingDiv = document.getElementById(`calc-working-${item.id}`);
-                
-                input.disabled = true;
-                const userAns = input.value.trim();
-                const isCorrect = userAns === item.a;
-                
-                if (isCorrect) {
-                    correctCount++;
-                    input.className = "w-full p-3 border-2 rounded-xl text-center font-bold text-lg border-emerald-400 bg-emerald-50 text-emerald-700";
-                    iconContainer.innerHTML = `<i class="ph-fill ph-check-circle text-emerald-500 text-2xl"></i>`;
-                } else {
-                    input.className = "w-full p-3 border-2 rounded-xl text-center font-bold text-lg border-red-400 bg-red-50 text-red-700";
-                    iconContainer.innerHTML = `<i class="ph-fill ph-x-circle text-red-500 text-2xl"></i>`;
-                }
-                iconContainer.classList.remove('hidden');
-                workingDiv.classList.remove('hidden');
-            });
             
-            appState.scores.calc = correctCount;
-            document.getElementById('calc-submit-btn').classList.add('hidden');
-            document.getElementById('calc-summary').classList.remove('hidden');
-            document.getElementById('calc-score-display').innerText = `${correctCount} / 10`;
-            document.getElementById('calc-summary').classList.add('flex');
+            CALC_DATA.forEach((item, i) => {
+                // Ensure minor delay between checks so streak animates sequentially if desired
+                setTimeout(() => {
+                    const input = document.getElementById(`calc-input-${item.id}`);
+                    const iconContainer = document.getElementById(`calc-icon-${item.id}`);
+                    const workingDiv = document.getElementById(`calc-working-${item.id}`);
+                    
+                    input.disabled = true;
+                    const userAns = input.value.trim();
+                    const isCorrect = userAns === item.a;
+                    
+                    if (isCorrect) {
+                        correctCount++;
+                        updateStreak(true); // Treat as individual streak progression
+                        input.className = "w-full p-3 border-2 rounded-xl text-center font-bold text-lg border-emerald-400 bg-emerald-50 text-emerald-700";
+                        iconContainer.innerHTML = `<i class="ph-fill ph-check-circle text-emerald-500 text-2xl"></i>`;
+                    } else {
+                        updateStreak(false); // Break streak
+                        input.className = "w-full p-3 border-2 rounded-xl text-center font-bold text-lg border-red-400 bg-red-50 text-red-700";
+                        iconContainer.innerHTML = `<i class="ph-fill ph-x-circle text-red-500 text-2xl"></i>`;
+                    }
+                    iconContainer.classList.remove('hidden');
+                    workingDiv.classList.remove('hidden');
+                    
+                    // On final item, trigger overall sound and show score
+                    if(i === CALC_DATA.length - 1) {
+                        appState.scores.calc = correctCount;
+                        if(correctCount === 10) SoundFX.success(); 
+                        else SoundFX.error();
+                        
+                        document.getElementById('calc-submit-btn').classList.add('hidden');
+                        document.getElementById('calc-summary').classList.remove('hidden');
+                        document.getElementById('calc-score-display').innerText = `${correctCount} / 10`;
+                        document.getElementById('calc-summary').classList.add('flex');
+                    }
+                }, i * 200); // 200ms stagger for gamified reveal
+            });
         }
 
         let dictationRecognition = null;
@@ -784,7 +880,7 @@
             document.getElementById(`mark-btn-${id}`).classList.add('hidden');
 
             const analysis = analyzeLongAnswer(id, text);
-            appState.longMarks[id] = analysis.score; // Auto-set initial score
+            appState.longMarks[id] = analysis.score; 
             
             const modelData = LONG_ANSWERS_DATA.find(d => d.id === id).model;
             const fbArea = document.getElementById(`feedback-area-${id}`);
@@ -808,7 +904,6 @@
                 <div class="text-slate-800 whitespace-pre-line font-medium">${modelData}</div>
             </div>`;
 
-            // Score Selector
             fbHtml += `<div class="flex flex-col md:flex-row items-center justify-between bg-slate-100 p-4 rounded-xl border border-slate-200">
                 <div class="mb-3 md:mb-0">
                     <span class="font-bold text-slate-800 block">Confirm Your Score</span>
@@ -850,7 +945,6 @@
             document.getElementById('dash-percentage').innerText = `${percent}%`;
             document.getElementById('dash-svg-text').innerText = `${percent}%`;
             
-            // SVG dasharray (circumference is 100 due to radius ~15.9)
             document.getElementById('dash-svg-path').style.strokeDasharray = `${percent}, 100`;
 
             let fbText = "Complete the activities to generate your feedback.";
