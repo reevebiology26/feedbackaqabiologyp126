@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ace Your Mock Weaknesses</title>
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Phosphor Icons (Lucide alternative for easy CDN usage) -->
+    <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
     <style>
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(5px); }
@@ -28,6 +30,14 @@
             50% { transform: scale(1.2) rotate(5deg); }
             100% { transform: scale(1) rotate(0); }
         }
+        /* Custom animation for the splash screen pen */
+        @keyframes writingAnim {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(10px, -10px) rotate(-10deg); }
+            50% { transform: translate(20px, 0px) rotate(5deg); }
+            75% { transform: translate(10px, 10px) rotate(-5deg); }
+        }
+        
         .animate-fade-in {
             animation: fadeIn 0.4s ease-out forwards;
         }
@@ -40,6 +50,9 @@
         .animate-streak-pop {
             animation: streakPop 0.4s ease-out;
         }
+        .animate-writing {
+            animation: writingAnim 2s infinite ease-in-out;
+        }
         .hidden { display: none !important; }
         
         /* Dashboard Circle SVG Transition */
@@ -48,8 +61,38 @@
         }
     </style>
 </head>
-<body class="bg-slate-50 font-sans text-slate-800 flex flex-col min-h-screen">
+<body class="bg-slate-50 font-sans text-slate-800 flex flex-col min-h-screen overflow-hidden" id="main-body">
 
+    <!-- Splash Screen -->
+    <div id="splash-screen" class="fixed inset-0 z-50 bg-slate-50 flex flex-col items-center justify-center transition-opacity duration-700 ease-in-out">
+        <div class="text-center px-4 animate-fade-in flex flex-col items-center">
+            
+            <!-- Animated Icons (Paper and Pen) -->
+            <div class="relative mb-8 w-32 h-32 flex items-center justify-center">
+                <!-- Exam Paper -->
+                <i class="ph-fill ph-file-text text-9xl text-blue-300 absolute"></i>
+                <!-- Animated Pen -->
+                <i class="ph-fill ph-pen-nib text-6xl text-blue-700 absolute -right-2 bottom-0 animate-writing drop-shadow-lg"></i>
+            </div>
+            
+            <h1 class="text-4xl md:text-6xl font-black tracking-tight mb-6 text-slate-800">
+                Ace Your Mock <span class="text-blue-600 block sm:inline mt-2 sm:mt-0">Weaknesses</span>
+            </h1>
+            
+            <div class="mb-12 transform -rotate-2 hover:rotate-0 transition-transform duration-300">
+                <p class="inline-block bg-emerald-100 text-emerald-800 text-xl md:text-3xl font-black px-6 py-4 rounded-2xl border-4 border-emerald-400 shadow-lg">
+                    Lock In with Mr Reeve's Interactive Resources 🔥
+                </p>
+            </div>
+            
+            <button onclick="dismissSplash()" class="bg-blue-600 hover:bg-blue-700 text-white text-2xl font-bold py-4 px-10 rounded-full shadow-[0_10px_20px_rgba(37,99,235,0.3)] transition-transform transform hover:scale-105 hover:-translate-y-1 flex items-center gap-3">
+                <span>Start Revising</span>
+                <i class="ph-bold ph-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main App Content (Behind Splash Screen) -->
     <header class="bg-blue-900 text-white shadow-md z-10 sticky top-0">
         <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
@@ -66,7 +109,7 @@
 
                 <button onclick="handleScreenshotClick()" class="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-5 py-2 rounded-full font-bold shadow-lg transition-transform transform hover:scale-105">
                     <i class="ph ph-camera text-xl"></i>
-                    <span class="hidden sm:inline">Screenshot</span>
+                    <span class="hidden sm:inline">Scorecard</span>
                 </button>
             </div>
         </div>
@@ -178,6 +221,7 @@
                         <div class="absolute inset-0 flex items-center justify-center font-bold text-3xl text-blue-600" id="dash-svg-text">0%</div>
                     </div>
                 </div>
+                
                 <div class="grid grid-cols-2 gap-4 mb-8">
                     <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-between">
                         <div class="text-sm font-bold text-slate-500 uppercase">1. Match Up</div>
@@ -217,12 +261,26 @@
         <span id="toast-text">Message</span>
     </div>
 
+    <!-- Name Entry Modal -->
+    <div id="name-modal" class="fixed inset-0 bg-slate-900/80 z-[60] hidden items-center justify-center p-4">
+        <div class="bg-white p-6 sm:p-8 rounded-2xl max-w-sm w-full shadow-2xl relative border-t-8 border-blue-600">
+            <h2 class="text-2xl font-black text-slate-800 mb-2">Enter Your Name</h2>
+            <p class="text-slate-500 font-medium mb-4 text-sm">Please provide your name to generate your personalized scorecard.</p>
+            <input type="text" id="student-name-input" class="w-full p-3 border-2 rounded-xl text-lg outline-none transition-colors border-slate-300 focus:border-blue-500 mb-4" placeholder="Your Name">
+            <div class="flex justify-end gap-3">
+                <button onclick="closeNameModal()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors font-medium">Cancel</button>
+                <button onclick="saveNameAndShowScorecard()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-bold shadow-md">Continue</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Scorecard Modal -->
     <div id="scorecard-modal" class="fixed inset-0 bg-slate-900/80 z-50 hidden items-center justify-center p-4">
         <div class="bg-white p-6 sm:p-8 rounded-2xl max-w-md w-full shadow-2xl relative border-t-8 border-blue-600 max-h-[90vh] overflow-y-auto">
             <button onclick="closeScorecard()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
                 <i class="ph ph-x-circle text-3xl"></i>
             </button>
+            
             <div class="text-center mb-6">
                 <i class="ph-fill ph-medal text-yellow-500 text-5xl mb-2 mx-auto block"></i>
                 <h2 class="text-3xl font-black text-slate-800">Scorecard</h2>
@@ -280,6 +338,23 @@
     </div>
 
     <script>
+        // Splash Screen Dismissal
+        function dismissSplash() {
+            const splash = document.getElementById('splash-screen');
+            const body = document.getElementById('main-body');
+            
+            // Allow scrolling again
+            body.classList.remove('overflow-hidden');
+            
+            // Fade out splash
+            splash.style.opacity = '0';
+            
+            // Remove from DOM after fade
+            setTimeout(() => {
+                splash.style.display = 'none';
+            }, 700);
+        }
+
         // Gamification & Audio System using Web Audio API and SpeechSynthesis
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
@@ -911,7 +986,7 @@
                 </div>
                 <div class="flex gap-2" id="score-btns-${id}">
                     ${[0, 1, 2, 3].map(m => `
-                        <button onclick="setLongScore(${id}, ${m})" id="btn-score-${id}-${m}" class="w-12 h-12 rounded-xl font-bold text-lg transition-all shadow-sm ${analysis.score === m ? 'bg-emerald-500 text-white border-2 border-emerald-600 scale-110' : 'bg-white text-slate-600 border border-slate-300 hover:bg-emerald-50'}">
+                        <button onclick="setLongScore(${id},${m})" id="btn-score-${id}-${m}" class="w-12 h-12 rounded-xl font-bold text-lg transition-all shadow-sm ${analysis.score === m ? 'bg-emerald-500 text-white border-2 border-emerald-600 scale-110' : 'bg-white text-slate-600 border border-slate-300 hover:bg-emerald-50'}">
                             ${m}
                         </button>
                     `).join('')}
@@ -959,15 +1034,31 @@
             document.getElementById('score-long').innerText = getLongTotal();
         }
 
+        // Modal based approach to replace prompt() to adhere to rules
         function handleScreenshotClick() {
             if (!appState.studentName.trim()) {
-                const name = window.prompt("Please enter your name for the scorecard:");
-                if (name) {
-                    appState.studentName = name;
-                    openScorecard();
-                }
+                document.getElementById('name-modal').classList.remove('hidden');
+                document.getElementById('name-modal').classList.add('flex');
             } else {
                 openScorecard();
+            }
+        }
+
+        function closeNameModal() {
+            document.getElementById('name-modal').classList.add('hidden');
+            document.getElementById('name-modal').classList.remove('flex');
+        }
+
+        function saveNameAndShowScorecard() {
+            const input = document.getElementById('student-name-input');
+            const name = input.value.trim();
+            if (name) {
+                appState.studentName = name;
+                closeNameModal();
+                openScorecard();
+            } else {
+                input.classList.add('border-red-500', 'animate-shake');
+                setTimeout(() => input.classList.remove('animate-shake'), 400);
             }
         }
 
